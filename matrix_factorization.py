@@ -2,7 +2,6 @@
 Created on Tue Sep 11 12:20:40 2018
 
 @author: Naomi 
-
 '''
 
 import pandas as pd
@@ -17,12 +16,14 @@ movies = pd.read_csv("datasets/movies.dat", sep="::", header = None)
 ratings = pd.read_csv("datasets/ratings.dat", sep="::", header = None)
 users = pd.read_csv("datasets/users.dat", sep="::", header = None)
 
-ratings_array = np.concatenate((ratings[0], ratings[1], ratings[2])).reshape((-1, 3), order='F')
+ratings_array = np.concatenate((ratings[0], ratings[1], 
+    ratings[2])).reshape((-1, 3), order='F')
 global_average_rating = ratings.mean(0)[2]
 
 movies.columns = ["MovieID","MovieTitle","Genre"]
 ratings.columns = ["UserID","MovieID","Rating","TimeStamp"]
-users.columns = ["UserID","Sex","AgeGroup","OccupationGroup","ZipCode"]
+users.columns = ["UserID","Sex","AgeGroup","OccupationGroup",
+                                                "ZipCode"]
 
 print('shape of movies-matrix:', movies.shape)
 print('shape of ratings-matrix:', ratings.shape)
@@ -31,10 +32,12 @@ print('shape of users-matrix:', users.shape)
 # create X-matrix from ratings data
 I = max(ratings_array[:,0]) # number of users
 J = max(ratings_array[:,1]) # number of movies
-X = np.zeros(shape=(I, J)) # TODO calculate the correct X-matrix
+X = np.zeros(shape=(I, J))
 
 for i in range(len(ratings_array)):
-    index1 = ratings_array[i,:][0] - 1
+    # subtract 1 so index wont get
+    # out of bounds.
+    index1 = ratings_array[i,:][0] - 1 
     index2 = ratings_array[i,:][1] - 1
     X[index1, index2] = ratings_array[i,:][2]
 
@@ -56,18 +59,22 @@ learn_rate = 0.005
 U = np.empty([I, num_factors])
 M = np.empty([num_factors, J])
 
-# apply the algorithm
-# loop until the terminal condition is met:
-#   that is when the RMSE does not decrease 
-#   during two iterations.
+# TODO: divide the matrices in train and test data
+
+
 def RMSE(x_actual, x_predicted):
     '''
     Calculates the RMSE of two matrices.
 
     Arguments
     ---------
-    x_actual : 
-    x_predicted : 
+    x_actual : numpy array
+        This is the training part of
+        the matrix X.
+
+    x_predicted : numpy array
+        This is the training part of
+        the predicted matrix X.
     '''
 
     return sqrt(mean_squared_error(x_actual, x_predicted))
@@ -75,7 +82,10 @@ def RMSE(x_actual, x_predicted):
 def calculate_eij(x, x_pred):
     '''
     Calculate the error for each element
-    and store in an numpy array.
+    and store in an numpy array. Each
+    element of the output array consists of
+    the prediction error for the rating of the
+    ith-user and the j-th movie.
 
     Arguments
     --------
@@ -121,6 +131,8 @@ def calculate_gradient(error, m, u):
 
 def update_matrices(u, m, eta, lr, gradient_m, gradient_u, regularization):
     '''
+    Update the ith row and the jth column
+    of the matrix U and M.
 
     Return
     -------
@@ -135,6 +147,14 @@ def update_matrices(u, m, eta, lr, gradient_m, gradient_u, regularization):
     U_update = u + eta*difference_u
     M_update = m + eta*difference_m
     return U_update, M_update
+
+# apply the algorithm
+# loop until the terminal condition is met:
+#   that is when the RMSE does not decrease 
+#   during two iterations.
+
+# TODO: write the algorithm
+# TODO: adjust the while condition to the one described above.
 
 iter = 0
 while iter < num_iter:
