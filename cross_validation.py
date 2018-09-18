@@ -4,7 +4,7 @@ Created on Tue Sep 11 12:20:40 2018
 Script performs 5-fold cross-validation.
 '''
 
-import numpy as np
+import numpy as numpy
 
 # Split the data at random into 5-folds
 nfolds=5

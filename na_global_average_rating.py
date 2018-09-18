@@ -33,4 +33,4 @@ global_average_rating = ratings.mean(0)[2]
 ## make sure that you clip the values.
 ## they cannot lie outside the range of [1, 5].
 
-## use 5-fold cross-validation to estimate the accuracy
+## use 5-fold cross-validation to estimate the accuracy.
