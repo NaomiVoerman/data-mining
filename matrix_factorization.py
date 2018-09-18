@@ -29,23 +29,23 @@ print('shape of ratings-matrix:', ratings.shape)
 print('shape of users-matrix:', users.shape)
 
 # create X-matrix from ratings data
-I = len(users) # number of users
-J = len(movies) # number of movies
-X = np.empty(shape=(I, J)) # TODO calculate the correct X-matrix
+I = max(ratings_array[:,0]) # number of users
+J = max(ratings_array[:,1]) # number of movies
+X = np.zeros(shape=(I, J)) # TODO calculate the correct X-matrix
 
-combinations = tuple(zip(*[ratings_array[:, 0], ratings_array[:, 1]]))
-#count = 0
+for i in range(len(ratings_array)):
+    index1 = ratings_array[i,:][0] - 1
+    index2 = ratings_array[i,:][1] - 1
+    X[index1, index2] = ratings_array[i,:][2]
 
-#for i in range(I):
-#    for j in range(J):
-#        try:
-#            index = combinations.index((i, j))
-#            test[i ,j] = ratings_array[index, 2]
-#
-#        except ValueError as err:
-#            test[i, j] = global_average_rating
-#            count=count+1
-#print(count)
+# count all the cells that are nonzero
+if np.count_nonzero(X) == ratings.shape[0]:
+    print("The X-matrix is filled in correctly")
+
+# fill in the zero-spots with the gobal average
+X[X<1] = global_average_rating
+if np.count_nonzero(X) == I*J:
+    print("The X-matrix contains no zeros")
 
 num_factors = 10
 num_iter = 75
@@ -55,11 +55,11 @@ learn_rate = 0.005
 # initialize U and M
 U = np.empty([I, num_factors])
 M = np.empty([num_factors, J])
-print(np.dot(U, M))
 
 # apply the algorithm
-# loop until the terminal condition is met
-# that is when the RMSE does not decrease during two iterations
+# loop until the terminal condition is met:
+#   that is when the RMSE does not decrease 
+#   during two iterations.
 def RMSE(x_actual, x_predicted):
     '''
     Calculates the RMSE of two matrices.
