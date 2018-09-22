@@ -64,8 +64,8 @@ regularization = 0.05
 learn_rate = 0.005
 
 # initialize U and M
-U = np.empty([X.shape[0], num_factors])
-M = np.empty([num_factors, X.shape[1]])
+U = np.random.rand(X.shape[0], num_factors)
+M = np.random.rand(num_factors, X.shape[1])
 
 def RMSE(x_actual, x_predicted):
     '''
@@ -185,4 +185,5 @@ while (itr < num_iter and rmse_updated != rmse) == True:
     # calculate the RMSE on the probe subset
     X_predicted = np.dot(U_update, M_update)
     rmse_updated = RMSE(X, X_predicted)
+    print(rmse_updated)
     itr = itr + 1
