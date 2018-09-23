@@ -67,11 +67,11 @@ b = np.arange(ratings.shape[0] % Nfolds)
 folds_vec = np.concatenate([a,b])
 np.random.shuffle(folds_vec)
 
-
 #initialize error vecs
 cols = ["global_train", "global_test", "user_train", "user_test", 
     "movie_train", "movie_test", "combined_train", "combined_test"]
-err = pd.DataFrame(index = range(0, Nfolds), columns = cols)
+err_rmse = pd.DataFrame(index = range(0, Nfolds), columns = cols)
+err_mae = pd.DataFrame(index = range(0, Nfolds), columns = cols)
 
 for fold in range(Nfolds):
     ind_test = folds_vec == fold
@@ -79,20 +79,32 @@ for fold in range(Nfolds):
     Ytest = ratings.Rating[ind_test]
     Ytrain = ratings.Rating[ind_train]
       
-    gobal_avg_vec = glb_avg(ratings, ind_train)
+    global_avg_vec = glb_avg(ratings, ind_train)
     movie_avg_vec = glb_avg_movie(ratings, ind_train)
     user_avg_vec = glb_avg_user(ratings, ind_train)
     
     #training errors
-    err.global_train[fold] = np.sqrt(np.mean( (Ytrain - gobal_avg_vec[ind_train])**2))
-    err.movie_train[fold] = np.sqrt(np.mean( (Ytrain - movie_avg_vec[ind_train])**2))
-    err.user_train[fold] = np.sqrt(np.mean( (Ytrain - user_avg_vec[ind_train])**2))
+    # rmse
+    err_rmse.global_train[fold] = np.sqrt(np.mean((Ytrain - global_avg_vec[ind_train])**2))
+    err_rmse.movie_train[fold] = np.sqrt(np.mean((Ytrain - movie_avg_vec[ind_train])**2))
+    err_rmse.user_train[fold] = np.sqrt(np.mean((Ytrain - user_avg_vec[ind_train])**2))
+
+    # mae
+    err_mae.global_train[fold] = np.mean(abs(Ytrain - global_avg_vec[ind_train]))
+    err_mae.movie_train[fold] = np.mean(abs((Ytrain - movie_avg_vec[ind_train])))
+    err_mae.user_train[fold] = np.mean(abs((Ytrain - user_avg_vec[ind_train])))
     
     #testing errors
-    err.global_test[fold] = np.sqrt(np.mean( (Ytest-gobal_avg_vec[ind_test])**2))
-    err.movie_test[fold] = np.sqrt(np.mean( (Ytest-movie_avg_vec[ind_test])**2))
-    err.user_test[fold] = np.sqrt(np.mean( (Ytest-user_avg_vec[ind_test])**2))
-    
+    #rmse
+    err_rmse.global_test[fold] = np.sqrt(np.mean((Ytest-global_avg_vec[ind_test])**2))
+    err_rmse.movie_test[fold] = np.sqrt(np.mean((Ytest-movie_avg_vec[ind_test])**2))
+    err_rmse.user_test[fold] = np.sqrt(np.mean((Ytest-user_avg_vec[ind_test])**2))
+
+    # mae
+    err_mae.global_test[fold] = np.mean(abs((Ytest-global_avg_vec[ind_test])))
+    err_mae.movie_test[fold] = np.mean(abs((Ytest-movie_avg_vec[ind_test])))
+    err_mae.user_test[fold] = np.mean(abs((Ytest-user_avg_vec[ind_test])))
+
     #linear combination method:
     #training
     #Design matrix
@@ -109,7 +121,8 @@ for fold in range(Nfolds):
     Ypred[Ypred < 1] = 1
     
     #training error
-    err.combined_train[fold] = np.sqrt(np.mean((Ytrain-Ypred)**2))
+    err_rmse.combined_train[fold] = np.sqrt(np.mean((Ytrain-Ypred)**2))
+    err_mae.combined_train[fold] = np.mean(abs(Ytrain-Ypred))
     
     #testing
     #Design matrix
@@ -124,11 +137,18 @@ for fold in range(Nfolds):
     Ypred[Ypred<1] = 1
 
     #test error
-    err.combined_test[fold] = np.sqrt(np.mean((Ytest - Ypred)**2))
+    err_rmse.combined_test[fold] = np.sqrt(np.mean((Ytest - Ypred)**2))
+    err_mae.combined_test[fold] = np.mean(abs(Ytest-Ypred))
     
     print("\nRMSE Fold " + str(fold) + ":")
-    print(err.loc[fold])
+    print(err_rmse.loc[fold])
     #print("Fold " + str(fold) + ": RMSE_train=" + str(err_train[fold]) + "; RMSE_test=" + str(err_test[fold]))
 
-print(err)
-print(err.mean(0))
+    print("\nMAE Fold " + str(fold) + ":")
+    print(err_mae.loc[fold])
+
+print(err_rmse)
+print(err_rmse.mean(0))
+
+print(err_mae)
+print(err_mae.mean(0))
