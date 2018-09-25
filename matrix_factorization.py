@@ -64,8 +64,8 @@ regularization = 0.05
 learn_rate = 0.005
 
 # initialize U and M
-U = np.random.rand(X.shape[0], num_factors)
-M = np.random.rand(num_factors, X.shape[1])
+U = np.random.rand(X.shape[0])
+M = np.random.rand(X.shape[1])
 
 def RMSE(x_actual, x_predicted):
     '''
@@ -162,8 +162,7 @@ def update_matrices(u, m, gradient_m, gradient_u):
 
 # TODO: check where goes wrong in algorithm
 
-X_predicted = np.dot(U, M)
-
+X_predicted = np.dot(U, M.T)
 itr = 0
 rmse_updated = 0
 rmse = 0.1
@@ -183,7 +182,7 @@ while (itr < num_iter and rmse_updated != rmse) == True:
         gradient_u=gradient_u)
 
     # calculate the RMSE on the probe subset
-    X_predicted = np.dot(U_update, M_update)
+    X_predicted = np.dot(U_update, M_update.T)
     rmse_updated = RMSE(X, X_predicted)
     print(rmse_updated)
     itr = itr + 1

@@ -15,6 +15,12 @@ users.columns = ["UserID","Sex","AgeGroup","OccupationGroup","ZipCode"]
 
 # 1. the global average
 def glb_avg(data, ind_train):
+    '''
+    Calculates the global average based
+    on the data and the train indices.
+    Returns a vector of length(Ratings)
+    including the global mean.
+    '''
     global_average_rating = data.Rating[ind_train].mean(0)
     rating_vec = np.repeat(global_average_rating, data.shape[0])
     return(rating_vec)
