@@ -54,3 +54,11 @@ def estimate_cardinality(values, k):
   return 2 ** (float(sum(max_zeroes)) / num_buckets) * num_buckets * 0.79402
 
 print([100000/estimate_cardinality([random.random() for i in range(100000)], 10) for j in range(10)])
+
+# test with the above tutorial
+x = random.random()
+print(hash(x))
+print(hash(x) & ((2**10) - 1))
+print(hash(x) >> (10))
+print("{0:b}".format(hash(x) >> (10)))
+print(trailing_zeroes(hash(x) >> (10)))
