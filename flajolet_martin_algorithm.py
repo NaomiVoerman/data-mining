@@ -23,9 +23,13 @@ import random
 
 # simulate stream
 print(random.getrandbits(32))
+print("{0:b}".format(random.getrandbits(32)))
 
 def trailing_zeroes(num):
-  """Counts the number of trailing 0 bits in num."""
+  '''
+  Counts the number of trailing 0 bits in num.
+  '''
+
   if num == 0:
     return 32 # Assumes 32 bit integer inputs!
   p = 0

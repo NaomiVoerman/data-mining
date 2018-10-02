@@ -22,8 +22,11 @@ add test
 import random
 
 # simulate random hash value
-print(random.getrandbits(32))
-print("{0:b}".format(random.getrandbits(32)))
+random.getrandbits(32)
+"{0:b}".format(random.getrandbits(32))
+
+# Tutorial on: 
+#   http://blog.notdot.net/2012/09/Dam-Cool-Algorithms-Cardinality-Estimation
 
 def trailing_zeroes(num):
   """Counts the number of trailing 0 bits in num."""
@@ -49,3 +52,5 @@ def estimate_cardinality(values, k):
     bucket_hash = h >> k
     max_zeroes[bucket] = max(max_zeroes[bucket], trailing_zeroes(bucket_hash))
   return 2 ** (float(sum(max_zeroes)) / num_buckets) * num_buckets * 0.79402
+
+print([100000/estimate_cardinality([random.random() for i in range(100000)], 10) for j in range(10)])
