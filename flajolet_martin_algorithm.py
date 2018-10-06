@@ -20,10 +20,13 @@ add test
 '''
 
 import random
+import numpy as np
 
-# simulate stream
-print(random.getrandbits(32))
-print("{0:b}".format(random.getrandbits(32)))
+np.random.seed(123)
+
+## try to simulate part of the stream
+#print(random.getrandbits(32))
+#print("{0:b}".format(random.getrandbits(32)))
 
 def trailing_zeroes(num):
   '''
@@ -31,12 +34,13 @@ def trailing_zeroes(num):
 
   Arguments
   ---------
-  num |
-    A 
+  num | binary bit number
+    A sequence of 32 contain solely 0's and 1's
+    representing a number in 32-bits.
   
   Returns
   --------
-  p | 
+  p | integer
     The number of trailing 0's.
   '''
 
@@ -91,4 +95,26 @@ def flajolet_martin(stream):
 
   return R
 
-print([100000/flajolet_martin([random.getrandbits(32) for i in range(100000)]) for j in range(10)])
+if __name__ == "__main__":
+  # run several times and take the mean/median
+  #   try this for 10, 20, 30, 40 and 50 runs
+  # also run for different number of 'distinct values'
+
+  tries = [10, 20, 30, 40, 50]
+  distinct = [1000, 10000, 100000, 1000000]
+
+  fm_means = np.empty([len(tries), len(distinct)])
+  fm_median = np.empty([len(tries), len(distinct)])
+  for i in range(len(tries)):
+    for j in range(len(distinct)):
+      # mean
+      fm_output = np.array([flajolet_martin([random.getrandbits(32) for k in range(distinct[j])]) for l in range(tries[i])])
+      fm_means[i, j] = fm_output.mean()
+
+      # median
+      fm_median[i, j] = np.median(fm_output)
+
+  print(fm_means)
+  print(fm_median)
+
+  
