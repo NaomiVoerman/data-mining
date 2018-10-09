@@ -117,4 +117,18 @@ if __name__ == "__main__":
   print(fm_means)
   print(fm_median)
 
+  # combine the mean and median
+  #   - use k times l sequences of data
+  #   say 10 times 1000 sequences
+  #   - split into k-groups of size l
+  #   - use the median to aggregate the
+  #   l results together
+  #   - take the mean of group k as estimate
+
+  k = tries[i] 
+  j = distinct[j]
+  total = k*j
+  np.array([flajolet_martin([random.getrandbits(32) for k in range(k*j)]))
+
+
   
