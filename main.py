@@ -27,9 +27,11 @@ def jaccard_similarity(S1, S2):
     of two sets of movies watched by
     two (different) users.
 
-    S1: set of arbitrary objects
-    S2: set of arbitrary objects
+    S1: np.array
+    S2: np.array
     '''
+    S1 = set(S1)
+    S2 = set(S2)
 
     intersection = S1 & S2
     union = S1 | S2
@@ -55,19 +57,18 @@ if __name__ == '__main__':
 
     # load the data
     data = np.load(path)
-    # this is a np array with (65225506 rows x 2 columns)
 
     # use the sparse package to make a sparse matrix: csc_matrix
     rows = data[::, 1]
     columns = data[::, 0]
     fill = np.ones((data.shape[0]), dtype=int)
     sparse_matrix = csc_matrix((fill, (rows, columns)), dtype=int)
+    sparse_array = sparse_matrix.toarray()
 
     # apply minhashing: create the signature matrix M
     signatures = 50
     r, c = sparse_matrix.shape
     #M = np.full((signatures, sparse_matrix.shape[1]), np.inf)
-    #M = np.zeros((signatures, c))
     M = np.random.randint(0, 250, (signatures, c))
 
     '''
@@ -117,9 +118,46 @@ if __name__ == '__main__':
         buckets[i, :] = np.sum(M[i*rb:(i*rb+rb), :], axis = 0)
 
     k = np.zeros((b))
+    actual_length = np.zeros((b))
     for i in range(b):
+        actual_length[i] = len(buckets[i, :])
         k[i] = len(np.unique(buckets[i, :]))
+    print(actual_length)
     print(k) # the number of buckets per band
+
+    ## find the movie pairs with jaccard similarty > 0.5
+    start = time.time()
+    movie_pairs = []
+    for elem in np.unique(buckets[0, :]):
+        index_elem = np.where(buckets[0, :] == elem)
+        # select the considered pairs
+        if (len(index_elem[0])) > 1:
+            for i in range(len(index_elem[0])):
+                for j in range(len(index_elem[0])):
+                    # calculate jaccard similarity
+                    if (index_elem[0][i] != index_elem[0][j]):
+                        if jaccard_similarity(M[:, i], M[:, j]) > t:
+                            # save these pairs of movies
+                            movie_pairs.append([index_elem[0][i], index_elem[0][j]])
+    print(movie_pairs)
+    end = time.time()
+    print("The time it takes to create the movie pairs with JS>0.5 is", end-start,"seconds")
+
+    '''
+    ## create text file results.txt
+    # for each similar pair
+    # 1. order such that u1 < u2
+    # 2. append to results.txt
+    # create text file as output file
+    f = open('results.txt','w')
+    f.write(str(377)+','+str(103531))
+    f.close()
+
+    # append
+    f = open('results.txt','a')
+    f.write('\n' + str(413)+','+str(3821))
+    f.close()
+    '''
 
 ## --------------------------------------------------------
     ## calculate buckets
