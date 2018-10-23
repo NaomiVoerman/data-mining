@@ -1,5 +1,5 @@
 '''
-@Author: Naomi Voerman
+@Author: Koen de Jong & Naomi Voerman
 
 The goal is to find similar users of Netflix
 with help of minhasing and LSH.
@@ -15,134 +15,104 @@ likely to be similar.
 '''
 
 import sys
-import time
+import time 
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.sparse import csc_matrix
-from collections import defaultdict
+import scipy.sparse as sc
 
-def jaccard_similarity(S1, S2):
-    '''
-    Calculates the jaccard similarity
-    of two sets of movies watched by
-    two (different) users.
+def combinations(mat):
+    n = mat.shape[0]
+    if n == 2: return(mat)
+    out = mat[0:2]
+    for i in range(n-2):
+        out = np.vstack((out, np.array((mat[0], mat[i+2])))) 
+    if n > 3:
+        out2 = combinations(mat[1:n])
+        out = np.vstack((out, out2))       
+    return(out)
 
-    S1: np.array
-    S2: np.array
-    '''
-    S1 = set(S1)
-    S2 = set(S2)
+def Jsim(pair):
+    real_sim = np.unique(np.sum(np.hstack((Sparse_MU[:,pair[0]].toarray(),
+                                          Sparse_MU[:,pair[1]].toarray())) == [0.,0.], axis = 1),
+                        return_counts = True)
+    
+    indA = real_sim[0]==0
+    if sum(indA) == 0:
+        A = 0
+    else:
+        A = real_sim[1][indA]
 
-    intersection = S1 & S2
-    union = S1 | S2
-    return len(intersection) / len(union)
-
-def probability_similarity(s, r, b):
-    '''
-    This function is the probability 
-    that the signatures will be compared 
-    for similarity.
-
-    s: jaccard similarity of two sets
-    r: number of rows in each band
-    b: number of bands
-    '''
-
-    return 1 - ((1 - s**r)**b)
+    indB = real_sim[0]==1
+    if sum(indB) == 0:
+        B = 0
+    else:
+        B = real_sim[1][indB]
+    sim = A / (A + B)
+    
+    return(sim)
 
 if __name__ == '__main__':
     seed = int(sys.argv[1])
     path = sys.argv[2]
     np.random.seed(seed=seed)
 
-    # load the data
-    data = np.load(path)
+    user_movie = np.load(path)
 
-    # use the sparse package to make a sparse matrix: csc_matrix
-    rows = data[::, 1]
-    columns = data[::, 0]
-    fill = np.ones((data.shape[0]), dtype=int)
-    sparse_matrix = csc_matrix((fill, (rows, columns)), dtype=int)
-    sparse_array = sparse_matrix.toarray()
+    Sparse_MU = sc.csr_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
 
-    # apply minhashing: create the signature matrix M
-    signatures = 50
-    r, c = sparse_matrix.shape
-    #M = np.full((signatures, sparse_matrix.shape[1]), np.inf)
-    M = np.random.randint(0, 250, (signatures, c))
+    I = 80
+    M = np.ones((I,Sparse_MU.shape[1]))*np.Inf
+    list_permutations = [np.random.permutation(Sparse_MU.shape[0]) for i in np.arange(I)]
 
-    '''
-    list_permutations = [np.random.permutation(r) for i in np.arange(signatures)]
-
-    start = time.time()
-    for i in range(signatures):
-        shuffled = sparse_matrix[list_permutations[i], :]
-
-        for row in np.arange(r):
-            ind_nonzero = shuffled[row, :].nonzero()[1]
-            M[i, ind_nonzero] = np.minimum(M[i, ind_nonzero], row+1)
-
+    #start = time.time()
+    for i in np.arange(I):
+        Sparse_temp = Sparse_MU[list_permutations[i], :]
+        
+        for rowN in np.arange(Sparse_MU.shape[0]): #np.arange(1):
+            
+            ind_nonzero = Sparse_temp[rowN,:].nonzero()[1]
+            M[i,ind_nonzero] = np.minimum(M[i,ind_nonzero],rowN+1)
+            
             if sum(M[i,:]) < np.Inf: break
-    end = time.time()
-    print("The time it takes to create the signature matrix M is", end - start,"seconds")
-    print(M)
-    '''
+    #end = time.time()
+    #print(end - start)
+                            
+    #Local sensitve hashing
+    #To buckets:
+    i=0
+    k=10
+    B=8
+    vec = 10**(np.arange(k))
+    mat_extra = np.transpose(np.tile(vec, (M.shape[1],1)))
+    buckets = np.zeros((B,M.shape[1]))
+    for i in range(B):
+        buckets[i,:] = np.sum(M[i*k:(i*k+k),:]*mat_extra, axis = 0)
+        #buckets[i,:] = np.sum(M[i*k:(i*k+k),:], axis = 0)
 
-    # In order to compare the signatures of all pairs of
-    #  columns apply LSH (Locality Sensitive Hashing).
+    #Finding possible similar pairs from buckets:
+    out = np.array((0,0))
+    for i in range(B):
+        realised_buckets = np.unique(buckets[i,:], return_counts = True)
+        ind = np.where(realised_buckets[1]>1)[0]
+        bucket_values_mult = realised_buckets[0][ind]
+        for j in range(bucket_values_mult.shape[0]):
+            mat = np.where(buckets[i,:] == bucket_values_mult[j] )[0]
+            out = np.vstack((out, combinations(mat)))
+    out = out[1:,:]
+    out_uniq = np.unique(out, axis = 0)
 
-    # calculate trade-off between b and r.
-    t = 0.5 # the minimum Jaccard similarity
-    '''
-    S = np.arange(0, 1, 0.1)
-    Sigs = np.arange(50, 150, 10)
-    
-    for sig in Sigs:
-        B = np.arange(5, 15, 1)
-        RB = sig/B 
+    #Checking similarity in M
+    Mrow = M.shape[0]
+    ind_high_pos = np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5
+    #sum(np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5)
 
-        for j in range(len(B)):
-            plt.plot(S, probability_similarity(S, B[j], RB[j]))
-            plt.axvline(t, color='black')
-            plt.title("n ="+str(sig))
-            plt.show()
-    '''
-    
-    b = int(signatures/20) # bands
-    rb = int(M.shape[0]/b) # the number of rows per band
-    print("the number of bands is",b,"and the number of rows per band is:", rb)
-    print("It is", b*rb == signatures, "that the number of signatures is equal to b*r")
-    
-    buckets = np.zeros((b, c))
-    for i in range(b):
-        buckets[i, :] = np.sum(M[i*rb:(i*rb+rb), :], axis = 0)
+    #Checking actual similarity in Sparse Matrix
 
-    k = np.zeros((b))
-    actual_length = np.zeros((b))
-    for i in range(b):
-        actual_length[i] = len(buckets[i, :])
-        k[i] = len(np.unique(buckets[i, :]))
-    print(actual_length)
-    print(k) # the number of buckets per band
+    #Further specified candidate pairs:
+    out_uniq2 = out_uniq[ind_high_pos,:]
+    out_uniq2 = list(map(tuple,out_uniq2))
+    np.array(map(Jsim, out_uniq2))
 
-    ## find the movie pairs with jaccard similarty > 0.5
-    start = time.time()
-    movie_pairs = []
-    for elem in np.unique(buckets[0, :]):
-        index_elem = np.where(buckets[0, :] == elem)
-        # select the considered pairs
-        if (len(index_elem[0])) > 1:
-            for i in range(len(index_elem[0])):
-                for j in range(len(index_elem[0])):
-                    # calculate jaccard similarity
-                    if (index_elem[0][i] != index_elem[0][j]):
-                        if jaccard_similarity(M[:, i], M[:, j]) > t:
-                            # save these pairs of movies
-                            movie_pairs.append([index_elem[0][i], index_elem[0][j]])
-    print(movie_pairs)
-    end = time.time()
-    print("The time it takes to create the movie pairs with JS>0.5 is", end-start,"seconds")
-
+    #Writing to txt
     '''
     ## create text file results.txt
     # for each similar pair
@@ -158,12 +128,3 @@ if __name__ == '__main__':
     f.write('\n' + str(413)+','+str(3821))
     f.close()
     '''
-
-## --------------------------------------------------------
-    ## calculate buckets
-    #buckets = [defaultdict(list) for b in range(b)]
-    #M_split = np.split(M, b, axis=0)
-    #for i in range(b): # b is the number of bands
-    #    tempsum = np.sum(M_split[i], axis=0)
-    #    for col in range(c):
-    #        buckets[i][tempsum[col]].append(col)
