@@ -21,10 +21,13 @@ import scipy.sparse as sc
 
 def combinations(mat):
     n = mat.shape[0]
-    if n == 2: return(mat)
+    if n == 2: 
+        return(mat)
+    
     out = mat[0:2]
-    for i in range(n-2):
+    for i in range(n - 2):
         out = np.vstack((out, np.array((mat[0], mat[i+2])))) 
+    
     if n > 3:
         out2 = combinations(mat[1:n])
         out = np.vstack((out, out2))       
@@ -59,46 +62,56 @@ if __name__ == '__main__':
 
     Sparse_MU = sc.csr_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
 
-    I = 80
-    M = np.ones((I,Sparse_MU.shape[1]))*np.Inf
+    I = 80 # number of signatures
+    M = np.ones((I, Sparse_MU.shape[1]))*np.Inf
     list_permutations = [np.random.permutation(Sparse_MU.shape[0]) for i in np.arange(I)]
 
-    #start = time.time()
+    print("1. Make the matrix M")
+    '''
+    start = time.time()
     for i in np.arange(I):
         Sparse_temp = Sparse_MU[list_permutations[i], :]
         
-        for rowN in np.arange(Sparse_MU.shape[0]): #np.arange(1):
+        for rowN in np.arange(Sparse_MU.shape[0]):
             
-            ind_nonzero = Sparse_temp[rowN,:].nonzero()[1]
-            M[i,ind_nonzero] = np.minimum(M[i,ind_nonzero],rowN+1)
+            ind_nonzero = Sparse_temp[rowN, :].nonzero()[1]
+            M[i, ind_nonzero] = np.minimum(M[i, ind_nonzero], rowN+1)
             
             if sum(M[i,:]) < np.Inf: break
-    #end = time.time()
-    #print(end - start)
-                            
+    end = time.time()
+    print(end - start)
+    '''
+
+    M = np.random.randint(0, 250, (I, Sparse_MU.shape[1]))
+
     #Local sensitve hashing
     #To buckets:
-    i=0
-    k=10
-    B=8
+    print("2. Create buckets")
+    k = 10
+    B = 8
     vec = 10**(np.arange(k))
-    mat_extra = np.transpose(np.tile(vec, (M.shape[1],1)))
-    buckets = np.zeros((B,M.shape[1]))
+    mat_extra = np.transpose(np.tile(vec, (M.shape[1], 1)))
+    buckets = np.zeros((B, M.shape[1]))
     for i in range(B):
-        buckets[i,:] = np.sum(M[i*k:(i*k+k),:]*mat_extra, axis = 0)
-        #buckets[i,:] = np.sum(M[i*k:(i*k+k),:], axis = 0)
+        #buckets[i, :] = np.sum(M[i*k:(i*k+k),:]*mat_extra, axis = 0)
+        buckets[i,:] = np.sum(M[i*k:(i*k+k), :], axis = 0)
 
     #Finding possible similar pairs from buckets:
-    out = np.array((0,0))
+    print("3. Find candidate pairs in buckets")
+    start = time.time()
+    out = np.array((0, 0))
     for i in range(B):
-        realised_buckets = np.unique(buckets[i,:], return_counts = True)
-        ind = np.where(realised_buckets[1]>1)[0]
+        # find all the considered buckets: at least two movie-indices in bucket
+        realised_buckets = np.unique(buckets[i, :], return_counts = True)
+        ind = np.where(realised_buckets[1] > 1)[0]
         bucket_values_mult = realised_buckets[0][ind]
         for j in range(bucket_values_mult.shape[0]):
-            mat = np.where(buckets[i,:] == bucket_values_mult[j] )[0]
+            mat = np.where(buckets[i, :] == bucket_values_mult[j])[0]
             out = np.vstack((out, combinations(mat)))
-    out = out[1:,:]
-    out_uniq = np.unique(out, axis = 0)
+    out = out[1:, :]
+    out_uniq = np.unique(out, axis=0)
+    end = time.time()
+    print("The time it takes to create the movie pairs with JS>0.5 is", end-start,"seconds")
 
     #Checking similarity in M
     Mrow = M.shape[0]
