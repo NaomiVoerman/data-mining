@@ -32,8 +32,8 @@ def combinations(mat):
     return(out)
 
 def Jsim(pair):
-    real_sim = np.unique(np.sum(np.hstack((Sparse_MU[:,pair[0]].toarray(),
-                                          Sparse_MU[:,pair[1]].toarray())) == [0.,0.], axis = 1),
+    real_sim = np.unique(np.sum(np.hstack((Sparse_MU_csc[:,pair[0]].toarray(),
+                                          Sparse_MU_csc[:,pair[1]].toarray())) == [0.,0.], axis = 1),
                         return_counts = True)
     
     indA = real_sim[0]==0
