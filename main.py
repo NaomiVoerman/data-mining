@@ -107,18 +107,18 @@ if __name__ == '__main__':
             out = np.vstack((out, combinations(mat)))
     out = out[1:, :]
     out_uniq = np.unique(out, axis=0)
-    print(out_uniq)
+    print(out_uniq.shape)
 
     #Checking similarity in M
-    start = time.time()
     Mrow = M.shape[0]
     ind_high_pos = np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5
+    print(ind_high_pos.shape)
     #sum(np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5)
 
     #Checking actual similarity in Sparse Matrix and writing to text
-    out_uniq[ind_high_pos,:]
+    out_uniq = out_uniq[ind_high_pos, :]
+    out_uniq = np.sort(out_uniq, axis=1)
     for i in range(out_uniq.shape[0]):
-        out_uniq = np.sort(out_uniq, axis=1)
         sim = Jsim(out_uniq[i, :])
         if sim > 0.5:
             if i == 0:
