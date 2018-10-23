@@ -11,7 +11,8 @@ represent the sets and reflect their
 similarity.
 
 LSH focusses on pairs of signatures
-likely to be similar.
+likely to be similar. Similarity is measured
+with Jaccard Similarity.
 '''
 
 import sys
@@ -54,6 +55,7 @@ def Jsim(pair):
     return(sim)
 
 if __name__ == '__main__':
+    total_start = time.time()
     seed = int(sys.argv[1])
     path = sys.argv[2]
     np.random.seed(seed=seed)
@@ -61,28 +63,26 @@ if __name__ == '__main__':
     user_movie = np.load(path)
 
     Sparse_MU = sc.csr_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
+    #Sparse_MU_csc = sc.csc_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
 
     I = 80 # number of signatures
     M = np.ones((I, Sparse_MU.shape[1]))*np.Inf
     list_permutations = [np.random.permutation(Sparse_MU.shape[0]) for i in np.arange(I)]
 
     print("1. Make the matrix M")
-    '''
     start = time.time()
     for i in np.arange(I):
         Sparse_temp = Sparse_MU[list_permutations[i], :]
         
         for rowN in np.arange(Sparse_MU.shape[0]):
-            
             ind_nonzero = Sparse_temp[rowN, :].nonzero()[1]
+            # minimum of currect cell in matrix M and proposed value
             M[i, ind_nonzero] = np.minimum(M[i, ind_nonzero], rowN+1)
             
-            if sum(M[i,:]) < np.Inf: break
+            if sum(M[i, :]) < np.Inf:
+                break
     end = time.time()
-    print(end - start)
-    '''
-
-    M = np.random.randint(0, 250, (I, Sparse_MU.shape[1]))
+    print("The time it takes to make signature matrix M is", end - start,"seconds")
 
     #Local sensitve hashing
     #To buckets:
@@ -114,30 +114,35 @@ if __name__ == '__main__':
     print("The time it takes to create the movie pairs with JS>0.5 is", end-start,"seconds")
 
     #Checking similarity in M
+    print("Check for similarity in matrix M")
     Mrow = M.shape[0]
     ind_high_pos = np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5
     #sum(np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5)
 
     #Checking actual similarity in Sparse Matrix
+    print("Check for similarity in sparse matrix")
 
     #Further specified candidate pairs:
-    out_uniq2 = out_uniq[ind_high_pos,:]
-    out_uniq2 = list(map(tuple,out_uniq2))
+    out_uniq2 = out_uniq[ind_high_pos, :]
+    out_uniq2 = list(map(tuple, out_uniq2))
     np.array(map(Jsim, out_uniq2))
 
+    #Relate movie pairs to user pairs
+
+
+
+
     #Writing to txt
-    '''
-    ## create text file results.txt
-    # for each similar pair
-    # 1. order such that u1 < u2
-    # 2. append to results.txt
-    # create text file as output file
-    f = open('results.txt','w')
-    f.write(str(377)+','+str(103531))
+    user_pairs = ...
+    user_pairs = np.sort(user_pairs, axis=1)
+    f = open('results.txt', 'w')
+    f.write(str(out_uniq3[0, 0]+','str(out_uniq3[0, 1])))
     f.close()
 
-    # append
-    f = open('results.txt','a')
-    f.write('\n' + str(413)+','+str(3821))
-    f.close()
-    '''
+    for i in np.range(1, out_uniq3.shape[0]):
+        f = open('results.txt', 'a'
+        f.write('\n' + str(out_uniq3[i, 0]+','str(out_uniq3[i, 1])))
+        f.close()
+    
+    total_end = time.time()
+    print("Total time:", total_end-total_start)
