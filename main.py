@@ -124,11 +124,12 @@ if __name__ == '__main__':
     #Checking actual similarity in Sparse Matrix
     print("Checking for similarity in actual sparse matrix")
     out_uniq = out_uniq[ind_high_pos,:]
+    count = 0
     for i in range(out_uniq.shape[0]):
         out_uniq = np.sort(out_uniq, axis=1)
         sim = Jsim(out_uniq[i, :])
         if sim > 0.5:
-            if i == 0:
+            if count == 0:
                 f = open('results.txt', 'w')
                 f.write(str(out_uniq[i, 0])+','+str(out_uniq[i, 1]))
                 f.close()
@@ -136,6 +137,7 @@ if __name__ == '__main__':
                 f = open('results.txt', 'a')
                 f.write('\n' + str(out_uniq[i, 0])+','+str(out_uniq[i, 1]))
                 f.close()
+            count += 1
  
     total_end = time.time()
-print("Total time:", total_end-total_start)
+print("Total time:", total_end-total_start, "\nPairs found:", count)
