@@ -62,15 +62,13 @@ if __name__ == '__main__':
 
     user_movie = np.load(path)
 
-    Sparse_MU = sc.csr_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
-    #Sparse_MU_csc = sc.csc_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
+    Sparse_MU_coo = sc.coo_matrix((np.ones(user_movie.shape[0]), (user_movie[:,1], user_movie[:, 0])))
+    Sparse_MU = Sparse_MU_coo.tocsr()
 
-    I = 80 # number of signatures
+    I = 60 # number of signatures
     M = np.ones((I, Sparse_MU.shape[1]))*np.Inf
     list_permutations = [np.random.permutation(Sparse_MU.shape[0]) for i in np.arange(I)]
 
-    print("1. Make the matrix M")
-    start = time.time()
     for i in np.arange(I):
         Sparse_temp = Sparse_MU[list_permutations[i], :]
         
@@ -81,24 +79,23 @@ if __name__ == '__main__':
             
             if sum(M[i, :]) < np.Inf:
                 break
-    end = time.time()
-    print("The time it takes to make signature matrix M is", end - start,"seconds")
+
+    Sparse_MU_csr = None
+    Sparse_temp = None
+    Sparse_MU_csc = Sparse_MU_coo.tocsc()
 
     #Local sensitve hashing
     #To buckets:
-    print("2. Create buckets")
     k = 10
-    B = 8
+    B = 6
     vec = 10**(np.arange(k))
     mat_extra = np.transpose(np.tile(vec, (M.shape[1], 1)))
     buckets = np.zeros((B, M.shape[1]))
     for i in range(B):
-        #buckets[i, :] = np.sum(M[i*k:(i*k+k),:]*mat_extra, axis = 0)
-        buckets[i,:] = np.sum(M[i*k:(i*k+k), :], axis = 0)
+        buckets[i, :] = np.sum(M[i*k:(i*k+k),:]*mat_extra, axis = 0)
+        #buckets[i,:] = np.sum(M[i*k:(i*k+k), :], axis = 0)
 
     #Finding possible similar pairs from buckets:
-    print("3. Find candidate pairs in buckets")
-    start = time.time()
     out = np.array((0, 0))
     for i in range(B):
         # find all the considered buckets: at least two movie-indices in bucket
@@ -110,39 +107,28 @@ if __name__ == '__main__':
             out = np.vstack((out, combinations(mat)))
     out = out[1:, :]
     out_uniq = np.unique(out, axis=0)
-    end = time.time()
-    print("The time it takes to create the movie pairs with JS>0.5 is", end-start,"seconds")
+    print(out_uniq)
 
     #Checking similarity in M
-    print("Check for similarity in matrix M")
+    start = time.time()
     Mrow = M.shape[0]
     ind_high_pos = np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5
     #sum(np.array([sum(M[:,out_uniq[i,0]] == M[:,out_uniq[i,1]]) / Mrow for i in range(out_uniq.shape[0])]) > 0.5)
 
-    #Checking actual similarity in Sparse Matrix
-    print("Check for similarity in sparse matrix")
-
-    #Further specified candidate pairs:
-    out_uniq2 = out_uniq[ind_high_pos, :]
-    out_uniq2 = list(map(tuple, out_uniq2))
-    np.array(map(Jsim, out_uniq2))
-
-    #Relate movie pairs to user pairs
-
-
-
-
-    #Writing to txt
-    user_pairs = ...
-    user_pairs = np.sort(user_pairs, axis=1)
-    f = open('results.txt', 'w')
-    f.write(str(out_uniq3[0, 0]+','str(out_uniq3[0, 1])))
-    f.close()
-
-    for i in np.range(1, out_uniq3.shape[0]):
-        f = open('results.txt', 'a'
-        f.write('\n' + str(out_uniq3[i, 0]+','str(out_uniq3[i, 1])))
-        f.close()
+    #Checking actual similarity in Sparse Matrix and writing to text
+    out_uniq[ind_high_pos,:]
+    for i in range(out_uniq.shape[0]):
+        out_uniq = np.sort(out_uniq, axis=1)
+        sim = Jsim(out_uniq[i, :])
+        if sim > 0.5:
+            if i == 0:
+                f = open('results.txt', 'w')
+                f.write(str(out_uniq[i, 0])+','+str(out_uniq[i, 1]))
+                f.close()
+            else:
+                f = open('results.txt', 'a')
+                f.write('\n' + str(out_uniq[i, 0])+','+str(out_uniq[i, 1]))
+                f.close()
     
     total_end = time.time()
     print("Total time:", total_end-total_start)
